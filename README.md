@@ -1,4 +1,4 @@
 Powershell-VMware
 =================
 
-Collection of Powershell scripts for VMware
+Personal Collection of Powershell scripts for VMware
