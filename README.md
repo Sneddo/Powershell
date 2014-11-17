@@ -8,4 +8,5 @@ Includes:
 * **Get-HostRAIDLevel** - Get RAID config for hosts
 * **Set-UpdateTools.ps1** - Set VMware tools to update on reboot 
 * **VMNoteSync.ps1** - **UNTESTED** Sync VM annotations from AD information (description and manager) 
+* **Compare-VCRole.ps1** - Generate a HTML report comparing two vCenter roles
 * ... more to come
