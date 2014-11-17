@@ -1,9 +1,8 @@
-Powershell-VMware
-=================
-
-Personal Collection of Powershell scripts for VMware
+Personal Collection of Powershell scripts. No guarantees provided with any of these scripts.
 
 Includes:
+VMware
+=================
 * **Enable-HotAdd.ps1** - To enable Hot-add for CPU and memory (requires VM reboot to become active)
 * **Get-HostRAIDLevel** - Get RAID config for hosts
 * **Set-UpdateTools.ps1** - Set VMware tools to update on reboot 
