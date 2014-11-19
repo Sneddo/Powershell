@@ -12,3 +12,7 @@ VMware
 Windows Server
 =================
 * **Enable-CleanMgr.ps1** - Used to simplify "install" of CleanMgr on Windows servers
+
+Profile
+================
+* **Microsoft.PowerShell_profile.ps1** - current Powershell profile. 
