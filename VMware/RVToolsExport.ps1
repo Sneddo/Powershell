@@ -32,7 +32,7 @@ foreach ($Server in $Servers)
    . "C:\Program Files (x86)\RobWare\RVTools\RVTools.exe" -passthroughAuth -s "$Server.internal.southernhealth.org.au" -c ExportAll2csv -d "$BasePath\$Server\$Date"
 
    # Cleanup old files
-   $Items = Get-ChildItem "$path\$server"
+   $Items = Get-ChildItem "$BasePath\$server"
    foreach ($item in $items)
    {
       $itemDate = ("{0}/{1}/{2}" -f $item.name.Substring(6,2),$item.name.Substring(4,2),$item.name.Substring(0,4))
