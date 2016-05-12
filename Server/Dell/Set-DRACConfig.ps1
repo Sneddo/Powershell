@@ -12,10 +12,11 @@
 .NOTES 
    File Name  : Set-DRACConfig
    Author     : John Sneddon - john.sneddon@monashhealth.org
-   Version    : 1.0
+   Version    : 1.0.1
   
   CHANGELOG
-  1.0 - Initial script. 
+  1.0.0 - Initial script. 
+  1.0.1 - Enable Auto Change for Secret Server
   
   There's probably a lot to clean up with this, but good enough for now...
   
@@ -30,7 +31,7 @@
 # Path to racadm executable
 $racadmExe = "C:\Program Files\Dell\SysMgt\rac5\racadm.exe"
 # Secret Server win auth webservice URL
-$SecretServerURL = "https://secretserver.internal.southernhealth.org.au/winauthwebservices/sswinauthwebservice.asmx"
+$SecretServerURL = "https://secretserver/winauthwebservices/sswinauthwebservice.asmx"
 # SS template to use
 $SecretTemplate = "Dell DRAC Account" 
 # SS folder to store passwords in
@@ -356,7 +357,7 @@ function Set-SecretServerPassword
    if ($SecretServer.SearchSecretsByFolder($hostname, $SecretFolderId, $false, $false, $false).SecretSummaries)
    {
       $Secret = $SecretServer.SearchSecretsByFolder($hostname, $SecretFolderId, $false, $false, $false).SecretSummaries[0]
-      $Secret = $SecretServer.GetSecret($Secret.SecretId, $null, $null).Secret
+      $Secret = $SecretServer.GetSecret($Secret.SecretId, $null, $null).Secret      
       ($Secret.Items | where {$_.FieldName -eq "Password"}).value = $password
       $result = $SecretServer.UpdateSecret($Secret)
    }
@@ -375,7 +376,14 @@ function Set-SecretServerPassword
       }
       
       $SecretServer.AddSecret($SecretTemplate.Id, $hostname, $FieldIDs, $FieldValues, $SecretFolderId)
-   }
+      
+      # Update secret to enable Auto Change
+      $Secret = $SecretServer.SearchSecretsByFolder($hostname, $SecretFolderId, $false, $false, $false).SecretSummaries[0]
+      $Secret = $SecretServer.GetSecret($Secret.SecretId, $true, $null).Secret
+      $Secret.SecretSettings.AutoChangeEnabled = $true
+      $Secret.SecretSettings.IsChangeToSettings = $true
+      $result = $SecretServer.UpdateSecret($Secret)
+   }   
 }
 
 ################################################################################
@@ -429,14 +437,12 @@ function Set-SecretServerPassword
                   </ComboBox>
                   <Label Content="DRAC Password" Width="170" Grid.Row="4" Grid.Column="0" />
                   <PasswordBox Name="txtDRACPass" Grid.Row="4" Grid.Column="1" /> 
-                  <!--
-                  <Label Content="Update Firmware?" Width="170" Height="Auto" Grid.Row="8" Grid.Column="0" />
-                  <CheckBox Name="chkFirmware" IsChecked="False" Grid.Row="8" Grid.Column="1" IsEnabled="False" ToolTip="Not Implemented...yet...or ever, who knows?">
+                  <Label Content="Update Firmware?" Width="170" Height="Auto" Grid.Row="6" Grid.Column="0" />
+                  <CheckBox Name="chkFirmware" IsChecked="False" Grid.Row="6" Grid.Column="1" IsEnabled="False" ToolTip="Not Implemented...yet...or ever, who knows?">
                      <TextBlock>Update Firmware?</TextBlock>
                   </CheckBox>
-                  -->
-                  <Label Content="Backup Settings?" Width="170" Height="Auto" Grid.Row="6" Grid.Column="0" />
-                  <CheckBox Name="chkBackup" IsChecked="False" Grid.Row="6" Grid.Column="1" ToolTip="Create a backup of existing configuration">
+                  <Label Content="Backup Settings?" Width="170" Height="Auto" Grid.Row="8" Grid.Column="0" />
+                  <CheckBox Name="chkBackup" IsChecked="False" Grid.Row="8" Grid.Column="1" ToolTip="Create a backup of existing configuration">
                      <TextBlock>Create Backup</TextBlock>
                   </CheckBox>
                </Grid>
