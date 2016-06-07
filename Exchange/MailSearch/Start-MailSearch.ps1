@@ -1,7 +1,25 @@
-# 1.0 - Initial script. Taken from Dave's script, and wrapped a nice UI around it
-# 1.1 - Add a checkbox to actually do the deletecontent
-# 1.2 - Added Search Criteria
-
+<#
+.SYNOPSIS 
+   This script aims to make Exchange searches slightly less painful
+.DESCRIPTION
+   Pretty GUI wrapper arounf mailbox search. 
+.NOTES 
+   File Name  : Start-MailSearch
+   Author     : John Sneddon - john.sneddon@monashhealth.org
+   Version    : 1.3
+  
+  CHANGELOG
+  1.0 - Initial script. Taken from Dave's script, and wrapped a nice UI around it
+  1.1 - Add a checkbox to actually do the deletecontent
+  1.2 - Added Search Criteria
+  1.3 - Add Option to run with delete if only searching. Hide the PS window.
+  
+.INPUTS
+   No inputs required
+.OUTPUTS
+   No outputs
+#>
+Clear-Host
 Write-Host "Loading Requirements..." -NoNewline
 # Add WPF Type
 Add-Type -AssemblyName PresentationFramework
@@ -14,6 +32,11 @@ if (!(Get-PSSnapin -name Microsoft.Exchange.Management.PowerShell.SnapIn -ErrorA
 }
 Write-Host "Done"
 
+# Hide the Powershell window
+Add-Type -Name "Methods" -Namespace "UIWin32" -PassThru -MemberDefinition '[DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, Int32 nCmdShow);' | Out-Null
+$Handle = (Get-Process -id $Pid).MainWindowHandle
+[UIWin32.Methods]::ShowWindow($Handle, 0) | Out-Null
+
 function Invoke-MailboxSearch 
 {
    Param (
@@ -25,7 +48,8 @@ function Invoke-MailboxSearch
       [string]$TargetMailboxFolder,
       [Bool]$DeleteContent
    )
-   $Form.Close()
+   $Form.Hide()
+   [UIWin32.Methods]::ShowWindow($Handle, 5) | Out-Null
    Write-Host "Starting Search..."
    
    $SearchIdentityList = $SearchIdentityList -split "`r`n"
@@ -45,7 +69,9 @@ function Invoke-MailboxSearch
       $SearchQueryString += ('AND attachment={0}' -f $SearchAttach)
    }
    
-    $SearchQueryString = $SearchQueryString.Trim("AND ")
+   $SearchQueryString = $SearchQueryString.Trim("AND ")
+   
+   Write-Verbose "Searching: $SearchQueryString"
    
    Write-Host "Resolving unique mailboxes..."
    $SearchMailbox = @()
@@ -55,29 +81,32 @@ function Invoke-MailboxSearch
    # prompted for deletion.  Deletion is -DeleteContent
    $i = 0; 
    $totalRemoved = 0
-   foreach ($SearchIdentity in $SearchMailbox) 
+   if ($SearchMailbox.count -gt 0)
    {
-      try
+      foreach ($SearchIdentity in $SearchMailbox) 
       {
-         $PercentComplete = ($i*100/$SearchIdentityList.Count)
-         Write-Progress -Activity "Searching Mailboxes" -Status ("{0}% - {1}" -f $PercentComplete, $SearchIdentity) -PercentComplete $PercentComplete
-         if ($DeleteContent)
+         try
          {
-            $result = Search-Mailbox -identity $SearchIdentity -SearchQuery $SearchQueryString -targetmailbox $TargetMailbox -targetfolder $TargetMailboxFolder -loglevel Full -deletecontent -force -WarningAction SilentlyContinue
+            $PercentComplete = ($i*100/$SearchIdentityList.Count)
+            Write-Progress -Activity "Searching Mailboxes" -Status ("{0}% - {1}" -f $PercentComplete, $SearchIdentity) -PercentComplete $PercentComplete
+            if ($DeleteContent)
+            {
+               $result = Search-Mailbox -identity $SearchIdentity -SearchQuery $SearchQueryString -targetmailbox $TargetMailbox -targetfolder $TargetMailboxFolder -loglevel Full -deletecontent -force -WarningAction SilentlyContinue
+            }
+            else
+            {  
+               $result = Search-Mailbox -identity $SearchIdentity -SearchQuery $SearchQueryString -targetmailbox $TargetMailbox -targetfolder $TargetMailboxFolder -loglevel Full -LogOnly -force -WarningAction SilentlyContinue
+            }
+            Write-Host ("{0}: {1} items found" -f $SearchIdentity.Name, $result.ResultItemsCount)
+            $totalRemoved += $result.ResultItemsCount
          }
-         else
-         {  
-            $result = Search-Mailbox -identity $SearchIdentity -SearchQuery $SearchQueryString -targetmailbox $TargetMailbox -targetfolder $TargetMailboxFolder -loglevel Full -LogOnly -force -WarningAction SilentlyContinue
+         catch
+         {
+            # Do nothing, just suppress the error
+            Write-Error "Something borked!"
          }
-         Write-Host ("{0}: {1} items found" -f $SearchIdentity.Name, $result.ResultItemsCount)
-         $totalRemoved += $result.ResultItemsCount
+         $i++
       }
-      catch
-      {
-         # Do nothing, just suppress the error
-         Write-Error "Something borked!"
-      }
-      $i++
    }
    Write-Progress -Activity "Searching Mailboxes" -Status "Done" -Completed
 
@@ -90,10 +119,29 @@ function Invoke-MailboxSearch
    if (-not $DeleteContent)
    {
       Write-Host -ForegroundColor Yellow "********* Search only - Emails not deleted *********"
+      
+      $Yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", "Yes"
+      $No = New-Object System.Management.Automation.Host.ChoiceDescription "&No", "No"
+      $Update = New-Object System.Management.Automation.Host.ChoiceDescription "&Update", "Update Search"
+      $options = [System.Management.Automation.Host.ChoiceDescription[]]($Yes, $No, $Update)
+      $result = $host.ui.PromptForChoice("Do you want to run the search again and delete content?", "Delete?", $options, 0)
+      switch ($result)
+      {
+         0 {   # Run it again with delete 
+               Invoke-MailboxSearch $txtSearchMB.Text $txtSearchString.Text $txtSearchBody.Text $txtSearchAttach.Text $txtTgtMB.Text $txtTgtFolder.Text $true 
+           }
+         1 {   <# Do nothing  #> }
+         2 {   # Show the form again
+               [UIWin32.Methods]::ShowWindow($Handle, 0)
+               $Form.ShowDialog() | out-nullu
+           }
+      }
    }
-   Write-Host "Press any key to continue ..."
-   
-   $x = $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+   else
+   {
+      Write-Host "Press any key to continue ..."
+      $x = $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+   }
 }
 
 ################################################################################
@@ -101,19 +149,19 @@ function Invoke-MailboxSearch
 ################################################################################
 # Use XAML to define the form, data to be populated in code
 [xml]$XAML_Main = @"
-	<Window
-		xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-		Height="500" Width="500" Title="Exchange Search">
-		<Window.Resources>
-			<Style TargetType="Label">
-				<Setter Property="Height" Value="30" />			
-				<Setter Property="Background" Value="#0A77BA" />
-				<Setter Property="Foreground" Value="White" />
-				<Setter Property="VerticalAlignment" Value="Top" />
-				<Setter Property="HorizontalAlignment" Value="Left" />
-			</Style>
-		</Window.Resources>
+   <Window
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Height="500" Width="500" Title="Exchange Search">
+      <Window.Resources>
+         <Style TargetType="Label">
+            <Setter Property="Height" Value="30" />			
+            <Setter Property="Background" Value="#0A77BA" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+         </Style>
+      </Window.Resources>
       <DockPanel Height="Auto">
       <DockPanel DockPanel.Dock="Bottom" Height="30">
          <Button Name="btnSearch" Height="30" Content="Start Search" VerticalAlignment="Top" />
@@ -164,9 +212,9 @@ function Invoke-MailboxSearch
                         </TextBlock>
                 </CheckBox>
             </Grid>
-		</DockPanel>
       </DockPanel>
-	</Window>
+      </DockPanel>
+   </Window>
 "@
 
 #Read XAML
@@ -188,9 +236,10 @@ $txtTgtFolder.Text = ("Search Results - {0}" -f (get-date -Format "yyyyMMdd"))
 #                                    EVENTS                                    #
 ################################################################################
 # Add Search button handler
-#$btnSearch.Add_Click({Write-Host $chkDelete.IsChecked})
 $btnSearch.Add_Click({Invoke-MailboxSearch $txtSearchMB.Text $txtSearchString.Text $txtSearchBody.Text $txtSearchAttach.Text $txtTgtMB.Text $txtTgtFolder.Text $chkDelete.IsChecked})
 
+# if we close the window, kill Powershell
+$Form.Add_Closing({ Exit })
 
 ################################################################################
 #                                    DISPLAY                                   #
