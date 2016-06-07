@@ -6,7 +6,7 @@
 .NOTES
    File Name  : Start-MailSearch
    Author     : John Sneddon - john.sneddon@monashhealth.org
-   Version    : 1.4.0
+   Version    : 1.5.0
 
   CHANGELOG
   1.0   - Initial script. Taken from Dave's script, and wrapped a nice UI around it
@@ -14,7 +14,8 @@
   1.2   - Added Search Criteria
   1.3   - Add Option to run with delete if only searching. Hide the PS window.
   1.4.0 - Add Sender search Criteria
-
+  1.5.0 - Add Date Search Options
+  
 .INPUTS
    No inputs required
 .OUTPUTS
@@ -47,6 +48,7 @@ function Invoke-MailboxSearch
       [string]$SearchAttach,
       [string]$TargetMailbox,
       [string]$TargetMailboxFolder,
+      $ReceivedDate,
       [Bool]$DeleteContent
    )
    $Form.Hide()
@@ -59,19 +61,26 @@ function Invoke-MailboxSearch
    $SearchQueryString  = ""
    if ($SearchQuerySubject)
    {
-      $SearchQueryString += ('AND Subject:"{0}"' -f $SearchQuerySubject)
+      $SearchQueryString += ('AND Subject:"{0}" ' -f $SearchQuerySubject)
    }
    if ($SearchBody)
    {
-      $SearchQueryString += ('AND Body:"{0}"' -f $SearchBody)
+      $SearchQueryString += ('AND Body:"{0}" ' -f $SearchBody)
    }
    if ($SearchSender)
    {
-      $SearchQueryString += ('AND From:"{0}"' -f $SearchSender)
+      $SearchQueryString += ('AND From:"{0}" ' -f $SearchSender)
    }
    if ($SearchAttach)
    {
-      $SearchQueryString += ('AND attachment={0}' -f $SearchAttach)
+      $SearchQueryString += ('AND attachment={0} ' -f $SearchAttach)
+   }
+   if ($ReceivedDate)
+   {
+      Write-Host -ForegroundColor Yellow ("Search-Mailbox can only search for dates, not datetimes, and in UTC only. Expanding search to {0} and {1} to ensure search is valid" -f
+                                             (Get-Date ($ReceivedDate) -format "yyyy-MM-dd"), ((Get-Date $ReceivedDate).AddDays(-1).ToString("yyyy-MM-dd")))
+      $SearchQueryString += ('AND Received:{1}..{0} ' -f (Get-Date ($ReceivedDate) -format "yyyy-MM-dd"), (Get-Date $ReceivedDate).AddDays(-1).ToString("yyyy-MM-dd" ))
+
    }
 
    $SearchQueryString = $SearchQueryString.Trim("AND ")
@@ -108,7 +117,7 @@ function Invoke-MailboxSearch
          catch
          {
             # Do nothing, just suppress the error
-            Write-Error "Something borked!"
+            Write-Error "Search Failed with query: $SearchQueryString"
          }
          $i++
       }
@@ -133,7 +142,7 @@ function Invoke-MailboxSearch
       switch ($result)
       {
          0 {   # Run it again with delete
-               Invoke-MailboxSearch $txtSearchMB.Text $txtSearchString.Text $txtSearchBody.Text $txtSearchSender.Text $txtSearchAttach.Text $txtTgtMB.Text $txtTgtFolder.Text $true
+               Invoke-MailboxSearch $txtSearchMB.Text $txtSearchString.Text $txtSearchBody.Text $txtSearchSender.Text $txtSearchAttach.Text $txtTgtMB.Text $txtTgtFolder.Text $dateFrom.SelectedDate $true
            }
          1 {   <# Do nothing  #> }
          2 {   # Show the form again
@@ -190,6 +199,8 @@ function Invoke-MailboxSearch
                   <RowDefinition Height="5" />
                   <RowDefinition Height="30" />
                   <RowDefinition Height="5" />
+                  <RowDefinition Height="30" />
+                  <RowDefinition Height="5" />
                   <RowDefinition />
                   <RowDefinition Height="5" />
                   <RowDefinition Height="30" />
@@ -212,11 +223,14 @@ function Invoke-MailboxSearch
                <Label Content="Search Attachments" Width="170" Grid.Row="10" Grid.Column="0" />
                <TextBox Name="txtSearchAttach" HorizontalAlignment="Stretch" Height="30" Grid.Row="10" Grid.Column="1" TextWrapping="Wrap" Text="*.zip" />
 
-               <Label Content="Email addresses" Width="170" Height="Auto" Grid.Row="12" Grid.Column="0" />
-               <TextBox Name="txtSearchMB" Grid.Row="12" Grid.Column="1" TextWrapping="Wrap" Text="" AcceptsReturn="True" HorizontalAlignment="Stretch" VerticalScrollBarVisibility="Visible" />
+               <Label Content="Search Dates" Width="170" Grid.Row="12" Grid.Column="0" />
+               <DatePicker Name="dateFrom" SelectedDateFormat="Long" FirstDayOfWeek="Monday" Grid.Row="12" Grid.Column="1" />
 
-               <Label Content="Delete?" Width="170" Height="Auto" Grid.Row="14" Grid.Column="0" />
-               <CheckBox Name="chkDelete" IsChecked="False" Grid.Row="14" Grid.Column="1">
+               <Label Content="Email addresses" Width="170" Height="Auto" Grid.Row="14" Grid.Column="0" />
+               <TextBox Name="txtSearchMB" Grid.Row="14" Grid.Column="1" TextWrapping="Wrap" Text="" AcceptsReturn="True" HorizontalAlignment="Stretch" VerticalScrollBarVisibility="Visible" />
+
+               <Label Content="Delete?" Width="170" Height="Auto" Grid.Row="16" Grid.Column="0" />
+               <CheckBox Name="chkDelete" IsChecked="False" Grid.Row="16" Grid.Column="1">
                   <TextBlock>
                           <Run Foreground="Red" FontWeight="Bold">Delete Email from Mailboxes</Run>
                   </TextBlock>
@@ -230,7 +244,7 @@ function Invoke-MailboxSearch
 #Read XAML
 $reader=(New-Object System.Xml.XmlNodeReader $XAML_Main)
 Try{$Form=[Windows.Markup.XamlReader]::Load( $reader )}
-Catch{Write-Error $l.XAMLError; exit}
+Catch{Write-Error $l.XAMLError; Read-host; exit}
 
 # Read form controls into Powershell Objects for ease of modifcation
 $XAML_Main.SelectNodes("//*[@Name]") | %{Set-Variable -Name ($_.Name) -Value $Form.FindName($_.Name)}
@@ -246,7 +260,7 @@ $txtTgtFolder.Text = ("Search Results - {0}" -f (get-date -Format "yyyyMMdd"))
 #                                    EVENTS                                    #
 ################################################################################
 # Add Search button handler
-$btnSearch.Add_Click({Invoke-MailboxSearch $txtSearchMB.Text $txtSearchString.Text $txtSearchBody.Text $txtSearchSender.Text $txtSearchAttach.Text $txtTgtMB.Text $txtTgtFolder.Text $chkDelete.IsChecked})
+$btnSearch.Add_Click({Invoke-MailboxSearch $txtSearchMB.Text $txtSearchString.Text $txtSearchBody.Text $txtSearchSender.Text $txtSearchAttach.Text $txtTgtMB.Text $txtTgtFolder.Text $dateFrom.SelectedDate $chkDelete.IsChecked})
 
 # if we close the window, kill Powershell
 $Form.Add_Closing({ Exit })
