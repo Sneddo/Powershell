@@ -1,3 +1,7 @@
+# 1.0 - Initial script. Taken from Dave's script, and wrapped a nice UI around it
+# 1.1 - Add a checkbox to actually do the deletecontent
+# 1.2 - Added Search Criteria
+
 Write-Host "Loading Requirements..." -NoNewline
 # Add WPF Type
 Add-Type -AssemblyName PresentationFramework
@@ -15,6 +19,8 @@ function Invoke-MailboxSearch
    Param (
       [string[]]$SearchIdentityList,
       [string]$SearchQuerySubject,
+      [string]$SearchBody,
+      [string]$SearchAttach,
       [string]$TargetMailbox,
       [string]$TargetMailboxFolder,
       [Bool]$DeleteContent
@@ -24,10 +30,22 @@ function Invoke-MailboxSearch
    
    $SearchIdentityList = $SearchIdentityList -split "`r`n"
    
-   # Search Query - Depending on whether you want the subject or subject and from, choose ONE, otherwise edit as required.
-   #              - Just comment out which one you don't want to use.
-   $SearchQueryString = ('Subject:"{0}"' -f $SearchQuerySubject)
-   #AND From:$SearchQueryFrom"
+   # Search Query - Build from supplied text
+   $SearchQueryString  = ""
+   if ($SearchQuerySubject)
+   {
+      $SearchQueryString += ('AND Subject:"{0}"' -f $SearchQuerySubject)
+   }
+   if ($SearchBody)
+   {
+      $SearchQueryString += ('AND Body:"{0}"' -f $SearchBody)
+   }
+   if ($SearchAttach)
+   {
+      $SearchQueryString += ('AND attachment={0}' -f $SearchAttach)
+   }
+   
+    $SearchQueryString = $SearchQueryString.Trim("AND ")
    
    Write-Host "Resolving unique mailboxes..."
    $SearchMailbox = @()
@@ -113,6 +131,10 @@ function Invoke-MailboxSearch
                <RowDefinition Height="5" />
                <RowDefinition Height="30" />  
                <RowDefinition Height="5" />
+               <RowDefinition Height="30" />  
+               <RowDefinition Height="5" />
+               <RowDefinition Height="30" />  
+               <RowDefinition Height="5" />
                <RowDefinition /> 
                <RowDefinition Height="5" />
                <RowDefinition Height="30" />  
@@ -126,11 +148,17 @@ function Invoke-MailboxSearch
                <Label Content="Search Subject" Width="170" Grid.Row="4" Grid.Column="0" />
                <TextBox Name="txtSearchString" HorizontalAlignment="Stretch" Height="30" Grid.Row="4" Grid.Column="1" TextWrapping="Wrap" Text="" /> 
                
-               <Label Content="Email addresses" Width="170" Height="Auto" Grid.Row="6" Grid.Column="0" />
-               <TextBox Name="txtSearchMB" Grid.Row="6" Grid.Column="1" TextWrapping="Wrap" Text="" AcceptsReturn="True" HorizontalAlignment="Stretch" VerticalScrollBarVisibility="Visible" />
+               <Label Content="Search Body" Width="170" Grid.Row="6" Grid.Column="0" />
+               <TextBox Name="txtSearchBody" HorizontalAlignment="Stretch" Height="30" Grid.Row="6" Grid.Column="1" TextWrapping="Wrap" Text="" /> 
                
-               <Label Content="Delete?" Width="170" Height="Auto" Grid.Row="8" Grid.Column="0" />
-               <CheckBox Name="chkDelete" IsChecked="False" Grid.Row="8" Grid.Column="1">
+               <Label Content="Search Attachments" Width="170" Grid.Row="8" Grid.Column="0" />
+               <TextBox Name="txtSearchAttach" HorizontalAlignment="Stretch" Height="30" Grid.Row="8" Grid.Column="1" TextWrapping="Wrap" Text="*.zip" /> 
+               
+               <Label Content="Email addresses" Width="170" Height="Auto" Grid.Row="10" Grid.Column="0" />
+               <TextBox Name="txtSearchMB" Grid.Row="10" Grid.Column="1" TextWrapping="Wrap" Text="" AcceptsReturn="True" HorizontalAlignment="Stretch" VerticalScrollBarVisibility="Visible" />
+               
+               <Label Content="Delete?" Width="170" Height="Auto" Grid.Row="12" Grid.Column="0" />
+               <CheckBox Name="chkDelete" IsChecked="False" Grid.Row="12" Grid.Column="1">
                         <TextBlock>
                                 <Run Foreground="Red" FontWeight="Bold">Delete Email from Mailboxes</Run>
                         </TextBlock>
@@ -161,7 +189,7 @@ $txtTgtFolder.Text = ("Search Results - {0}" -f (get-date -Format "yyyyMMdd"))
 ################################################################################
 # Add Search button handler
 #$btnSearch.Add_Click({Write-Host $chkDelete.IsChecked})
-$btnSearch.Add_Click({Invoke-MailboxSearch $txtSearchMB.Text $txtSearchString.Text $txtTgtMB.Text $txtTgtFolder.Text $chkDelete.IsChecked})
+$btnSearch.Add_Click({Invoke-MailboxSearch $txtSearchMB.Text $txtSearchString.Text $txtSearchBody.Text $txtSearchAttach.Text $txtTgtMB.Text $txtTgtFolder.Text $chkDelete.IsChecked})
 
 
 ################################################################################
