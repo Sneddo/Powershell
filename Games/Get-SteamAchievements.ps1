@@ -1,5 +1,6 @@
 $User = Read-Host "Steam short name"
-$GamesURLContent = Invoke-WebRequest ("http://steamcommunity.com/id/{0}/games/?tab=all" -f $User)
+$webclient = new-object System.Net.WebClient
+$GamesURLContent = $webclient.DownloadString("http://steamcommunity.com/id/{0}/games/?tab=all" -f $User)
 
 $Achieves = @()
 
