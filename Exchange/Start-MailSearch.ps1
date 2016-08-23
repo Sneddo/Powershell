@@ -2,7 +2,7 @@
 .SYNOPSIS
    This script aims to make Exchange searches slightly less painful
 .DESCRIPTION
-   Pretty GUI wrapper arounf mailbox search.
+   Pretty GUI wrapper around mailbox search.
 .NOTES
    File Name  : Start-MailSearch
    Author     : John Sneddon - john.sneddon@monashhealth.org
