@@ -30,10 +30,14 @@ gci *.jpg | foreach {
 
    if ($Date)
    {
-      $newName = $_.DirectoryName +"\" + $date + "\" + $_.Name
+      $newDir = $_.DirectoryName +"\" + $date + "\" 
       
-      Write-Host $newName -ForegroundColor Cyan
-      mv $_ $newName
+      if (-not (Test-Path $newDir))
+      {
+         New-Item -ItemType Directory $NewDir | Out-Null
+      }
+      Write-Host ($newDir+$_.Name) -ForegroundColor Cyan
+      mv $_.FullName ($newDir+$_.Name)
    }
    else
    {
