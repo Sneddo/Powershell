@@ -33,7 +33,7 @@ gci *.jpg | foreach {
       $newName = $_.DirectoryName +"\" + $date + "\" + $_.Name
       
       Write-Host $newName -ForegroundColor Cyan
-      #mv $_ $newName
+      mv $_ $newName
    }
    else
    {
