@@ -4,7 +4,7 @@
 .DESCRIPTION
    Performs full export from RVTools. Archives old versions.
 .NOTES 
-   File Name  : RVToolsExport.ps1 
+   File Name  : Export-RVTools.ps1 
    Author     : John Sneddon
    Version    : 1.0.0
 .PARAMETER Servers

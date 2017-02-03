@@ -1,0 +1,3 @@
+[submodule "_Modules/PSReadLine"]
+	path = _Modules/PSReadLine
+	url = https://github.com/lzybkr/PSReadLine.git

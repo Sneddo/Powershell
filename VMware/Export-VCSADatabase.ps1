@@ -1,3 +1,20 @@
+<# 
+.SYNOPSIS 
+   Backup and download the VCSA database
+
+.DESCRIPTION
+   Uses WinSCP to connect to the VCSA, backup the database and then download to
+   the local computer.
+
+.NOTES 
+   File Name  : Export-VCSADatabase.ps1
+   Author     : John Sneddon
+   Version    : 1.0.0
+   
+.REQUIREMENTS
+   WinSCP
+#>
+
 $VCServers = @{$VCServers = @{"server" = @{"SshHostKeyFingerprint" = "ssh-rsa 1024 xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx"; "Username" = "root"; "Password" = "SECURESTRING"; }}
 
 $BackupLocation = "C:\temp\"

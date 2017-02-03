@@ -1,4 +1,15 @@
-<# Get the RAID config of all hosts #>
+<# 
+.SYNOPSIS 
+   Get the RAID config of all hosts
+
+.DESCRIPTION
+   Get the RAID detail for ESX hosts
+
+.NOTES 
+   File Name  : Get-HostRAIDLevel.ps1
+   Author     : John Sneddon
+   Version    : 1.0.0
+#>
 $timeout = 2
 $HostCred = Get-Credential
 $CIOpt = New-CimSessionOption -SkipCACheck -SkipCNCheck -SkipRevocationCheck -Encoding Utf8 -UseSsl

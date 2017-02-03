@@ -1,3 +1,17 @@
+<# 
+.SYNOPSIS 
+   Invoke Windows update search and install
+
+.DESCRIPTION
+   Runs an update check and install, with automatic reboot at the end if 
+   required.
+
+.NOTES 
+   File Name  : Invoke-WindowsUpdates.ps1
+   Author     : John Sneddon
+   Version    : 1.0.0
+#>
+
 #Define update criteria.
 $Criteria = "IsInstalled=0 and Type='Software'"
 

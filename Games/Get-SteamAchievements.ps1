@@ -1,3 +1,16 @@
+<# 
+.SYNOPSIS 
+   Grab achievement stats for a Steam account
+
+.DESCRIPTION
+   Scrapes achievement data for a Steam profile. Must be set to public to work.
+
+.NOTES 
+   File Name  : Get-SteamAchievements.ps1
+   Author     : John Sneddon
+   Version    : 1.0.0
+#>
+
 $User = Read-Host "Steam short name"
 $webclient = new-object System.Net.WebClient
 $GamesURLContent = $webclient.DownloadString("http://steamcommunity.com/id/{0}/games/?tab=all" -f $User)

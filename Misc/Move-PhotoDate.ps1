@@ -1,3 +1,16 @@
+<# 
+.SYNOPSIS 
+   Move photos into a date folder based on EXIF Date Taken field
+
+.DESCRIPTION
+   Move photos to a folder in yyyy-MM-dd format, based on EXIF data.
+
+.NOTES 
+   File Name  : Move-PhotoDate.ps1
+   Author     : John Sneddon
+   Version    : 1.0.0
+#>
+
 param([string]$file)
 
 function Get-TakenDate($file) 
