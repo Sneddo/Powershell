@@ -32,7 +32,7 @@ $currDirectory = ""
 
 $content = "Personal Collection of Powershell scripts. No guarantees provided with any of these scripts.`n`n"
 
-foreach ($dir in (Get-ChildItem -Directory -Path ../ | Sort-Object Name))
+foreach ($dir in (Get-ChildItem -Directory -Path ../ | Where-Object {$_.Name -notmatch "^_"} | Sort-Object Name))
 {
    $indent = ""
    $prevSubDir = ""
