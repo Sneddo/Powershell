@@ -17,7 +17,7 @@
 
 param
 (
-   $Servers = @("MHDANXENVC01", "MHNBPVC01"),
+   $Servers = @("VCENTER"),
    $BasePath = "C:\Scripts\Powershell\RVToolsExport\Archive",
    $OldFileDays = 30
 )
@@ -30,7 +30,7 @@ foreach ($Server in $Servers)
    New-Item -Path "$BasePath\$Server\$Date" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null 
 
    # Run Export
-   . "C:\Program Files (x86)\RobWare\RVTools 3.9.5\RVTools.exe" -passthroughAuth -s $Server -c ExportAll2csv -d "$BasePath\$Server\$Date"
+   . "C:\Program Files (x86)\RobWare\RVTools\RVTools.exe" -passthroughAuth -s $Server -c ExportAll2csv -d "$BasePath\$Server\$Date"
 
    # Cleanup old files
    $Items = Get-ChildItem -Directory "$BasePath\$server"
