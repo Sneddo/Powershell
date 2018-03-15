@@ -4,9 +4,9 @@
 .DESCRIPTION
    Performs full export from RVTools. Archives old versions.
 .NOTES 
-   File Name  : Export-RVTools.ps1 
+   File Name  : RVToolsExport.ps1 
    Author     : John Sneddon
-   Version    : 1.0.0
+   Version    : 1.0.1
 .PARAMETER Servers
    Specify which vCenter server(s) to connect to
 .PARAMETER BasePath
@@ -14,9 +14,10 @@
 .PARAMETER OldFileDays
    How many days to retain copies
 #>
+
 param
 (
-   $Servers = @("Server"),
+   $Servers = @("MHDANXENVC01", "MHNBPVC01"),
    $BasePath = "C:\Scripts\Powershell\RVToolsExport\Archive",
    $OldFileDays = 30
 )
@@ -26,13 +27,13 @@ $Date = (Get-Date -f "yyyyMMdd")
 foreach ($Server in $Servers)
 {
    # Create Directory
-   New-Item -Path "$BasePath\$Server\$Date" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
+   New-Item -Path "$BasePath\$Server\$Date" -ItemType Directory -ErrorAction SilentlyContinue | Out-Null 
 
    # Run Export
-   . "C:\Program Files (x86)\RobWare\RVTools\RVTools.exe" -passthroughAuth -s "$Server.internal.southernhealth.org.au" -c ExportAll2csv -d "$BasePath\$Server\$Date"
+   . "C:\Program Files (x86)\RobWare\RVTools 3.9.5\RVTools.exe" -passthroughAuth -s $Server -c ExportAll2csv -d "$BasePath\$Server\$Date"
 
    # Cleanup old files
-   $Items = Get-ChildItem "$BasePath\$server"
+   $Items = Get-ChildItem -Directory "$BasePath\$server"
    foreach ($item in $items)
    {
       $itemDate = ("{0}/{1}/{2}" -f $item.name.Substring(6,2),$item.name.Substring(4,2),$item.name.Substring(0,4))
@@ -43,3 +44,7 @@ foreach ($Server in $Servers)
       }
    }
 }
+
+# Changelog:
+# 1.0.0 - Initial release
+# 1.0.1 - Fixed cleanup routine with uninitialised variable $path
